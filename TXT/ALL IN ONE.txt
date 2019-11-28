@@ -1,0 +1,340 @@
+www.apunkagames.net
+
+
+***************************************************************************FIREBASE SETTING DATA *************************************************************************************************************
+
+
+#include "FirebaseESP8266.h"																
+#include <ESP8266WiFi.h>
+
+#define FIREBASE_HOST "dummy-cd6d8.firebaseio.com"
+#define FIREBASE_AUTH "RV3DRq90y7ysfFLoWIB5Rs4pacO6cK0pQZIYmWqU"
+#define WIFI_SSID "pub"
+#define WIFI_PASSWORD "11110000"
+FirebaseData firebaseData;
+void printJsonObjectContent(FirebaseData &data);
+int i = 0;
+String path = "/School/Registered_Person";
+
+void setup()
+{
+  Serial.begin(115200);WiFi.begin(WIFI_SSID, WIFI_PASSWORD);Serial.print("Connecting to Wi-Fi");while (WiFi.status() != WL_CONNECTED){Serial.print(".");delay(300);}Serial.println(WiFi.localIP());Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH);Firebase.reconnectWiFi(true);Firebase.setReadTimeout(firebaseData, 1000 * 60);Firebase.setwriteSizeLimit(firebaseData, "tiny");FirebaseJson json;
+  for(int i = 0 ; i < 100;i++)
+  {
+  Firebase.pushString(firebaseData, path + "/Person-"+i, "Name-"+i);
+  Firebase.pushString(firebaseData, path + "/Person-"+i, "A0 34 6"+i);
+  
+  
+  
+  }
+
+}
+
+void loop()
+{
+
+  
+}
+
+
+***********************************************************************************END*****************************************************************************************************************
+
+
+
+
+
+
+
+
+
+
+
+
+*****************************RFID READING*******************************************************************
+
+/* SDA   10
+ * SCK   13
+ * MOSI  11
+ * MISO  12
+ * RST   09
+
+*/
+#include <SPI.h>
+#include <MFRC522.h>
+ 
+#define SS_PIN 10
+#define RST_PIN 9
+MFRC522 mfrc522(SS_PIN, RST_PIN);   // Create MFRC522 instance.
+ 
+void setup() 
+{
+  //rfid reading
+  Serial.begin(9600);SPI.begin();mfrc522.PCD_Init();Serial.println("Enter the card.");Serial.println();
+
+}
+void loop() 
+{
+  //rfid reading
+  if ( ! mfrc522.PICC_IsNewCardPresent()) 
+  {return;
+  }if (! mfrc522.PICC_ReadCardSerial())
+  {
+    return;
+  }
+    String content= "";
+    byte letter;
+    for (byte i = 0; i < mfrc522.uid.size; i++)
+    {
+      content.concat(String(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " "));
+      content.concat(String(mfrc522.uid.uidByte[i], HEX));
+    }
+    content.toUpperCase();
+    if(content.equals(" 0B 20 02 0C"))
+    {
+      Serial.println(content);
+      Serial.println("GODA");
+      Serial.println();
+      delay(1000);
+    }
+    else 
+    {
+      Serial.println(content);
+      Serial.println("MADA");
+      delay(1000); 
+    }
+
+   //  if(content.substring(1) == "0B 20 02 0C")
+   // {
+   //   Serial.println(content.substring(1));
+   //   Serial.println();delay(1000);
+   // }
+  //  else 
+   // {
+    //  Serial.println(content.substring(1));delay(1000); 
+    //}
+ 
+} 
+
+
+****************************************************************END***********************************
+
+
+
+
+
+****************************SERIALLY SENDING DATA******************************
+
+
+#include <SoftwareSerial.h>
+#include<ArduinoJson.h>
+SoftwareSerial s(5,6);
+int anread = 0;
+#include <SPI.h>
+#include <MFRC522.h>
+ 
+#define SS_PIN 10
+#define RST_PIN 9
+MFRC522 mfrc522(SS_PIN, RST_PIN); 
+
+
+void setup()
+{
+    Serial.begin(9600);SPI.begin();mfrc522.PCD_Init();Serial.println("Enter the card.");Serial.println();
+
+  s.begin(9600);
+  while(!Serial) continue;
+}
+void loop()
+{
+  //rfid reading
+  if ( ! mfrc522.PICC_IsNewCardPresent()) 
+  {return;
+  }if (! mfrc522.PICC_ReadCardSerial())
+  {
+    return;
+  }
+    String content= "";
+    byte letter;
+    for (byte i = 0; i < mfrc522.uid.size; i++)
+    {
+      content.concat(String(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " "));
+      content.concat(String(mfrc522.uid.uidByte[i], HEX));
+    }
+    content.toUpperCase();
+    if(content.equals(" 0B 20 02 0C"))
+    {
+      Serial.println(content);
+      Serial.println("GODA");
+      StaticJsonBuffer<1000> jsonBuffer;
+      JsonObject& root = jsonBuffer.createObject();
+      root ["data3"] = content;
+
+      if(s.available()>0)
+      {
+          root.printTo(s);
+           delay(500);
+       }
+      Serial.println();
+      delay(1000);
+    }
+    else 
+    {
+      StaticJsonBuffer<1000> jsonBuffer;
+      JsonObject& root = jsonBuffer.createObject();
+      root ["data3"] = content;
+
+      if(s.available()>0)
+    {
+        root.printTo(s);
+        delay(500);
+    }
+      Serial.println(content);
+      Serial.println("MADA");
+      delay(1000); 
+    }
+
+
+
+
+
+
+/*
+  
+  StaticJsonBuffer<1000> jsonBuffer;
+  JsonObject& root = jsonBuffer.createObject();
+  root ["data3"] = "water";
+
+  if(s.available()>0)
+  {
+    root.printTo(s);
+    delay(500);
+  }
+ 
+
+  */
+}
+
+
+
+*******************************END****************************************
+
+
+
+******************************CREATING JSON OBJECT********************************
+
+#include "FirebaseESP8266.h"
+#include <ArduinoJson.h>
+#include <ESP8266WiFi.h>
+#define FIREBASE_HOST "dummy-cd6d8.firebaseio.com"
+#define FIREBASE_AUTH "RV3DRq90y7ysfFLoWIB5Rs4pacO6cK0pQZIYmWqU"
+#define WIFI_SSID "pub"
+#define WIFI_PASSWORD "11110000"
+FirebaseData firebaseData;
+void setup()
+{
+
+    Serial.begin(115200);
+    Serial.println();
+    Serial.println();
+
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+    Serial.print("Connecting to Wi-Fi");
+    while (WiFi.status() != WL_CONNECTED)
+    {
+        Serial.print(".");
+        delay(300);
+    }
+    Serial.println();
+    Serial.print("Connected with IP: ");
+    Serial.println(WiFi.localIP());
+    Serial.println();
+
+    Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH);
+    Firebase.reconnectWiFi(true);
+
+    String path = "/School Data/Registered People/RegisteredPeopleArray";
+    
+    Firebase.getJSON(firebaseData, path);
+    Serial.println("json data received aa");  
+    Serial.println(firebaseData.jsonData());
+
+    
+/// *** this sample code creates an array in the firebase database *** ///
+
+//   FirebaseJson json;
+//   FirebaseJsonArray jsonArr;
+//   FirebaseJson regPerson;
+   
+//  for(int i=0;i<5;i++)
+//  {
+//    regPerson.addString("Name","The Name"+i);
+//    regPerson.addString("Address","The Address"+i);
+//    regPerson.addString("IdCardNumber","The IdCardNumber"+i);
+//    regPerson.addString("Phone","The Phone"+i);
+
+//    jsonArr.addJson(&regPerson);
+//  }
+//  json.addArray("RegisteredPeopleArray",&jsonArr);
+
+//  Serial.println("Going to set data ...");
+//  Firebase.setJSON(firebaseData, path, json);
+  
+//  Serial.println("Data set ..");
+
+///**************************************************//
+
+
+    StaticJsonBuffer<1200> jsonBuffer;
+    JsonArray& root = jsonBuffer.parseArray(firebaseData);
+
+    if (!root.success())
+    {
+      Serial.println("parseArray() failed");
+      return;
+    }    
+     for (int j=0;j<4;j++)
+     {
+      String Sname = root.get(0)["Name"];
+      String address = root.get(0)["Address"];
+      String IdCardNumber = root.get(0)["IdCardNumber"];
+      Serial.println(Sname);
+      Serial.println(address);
+      Serial.println(IdCardNumber);
+    }
+    
+    //Serial.println(jsonData);
+    //Serial.println(jsonData[13]);
+    for(int i = 1 ; i<=4;i++)
+    {
+      String j = String(i);
+      String path = "/School Data/Registered People/person-"+j;
+    String jsonData = "";
+    Firebase.getJSON(firebaseData, path);
+    jsonData = firebaseData.jsonData();
+    //Serial.println(firebaseData.jsonData());  
+    }
+    for(int i = 1 ; i<=4;i++)
+    {
+        String j = String(i);
+        String path = "/School Data/Registered People/person-"+j;
+        String jsonData = "";
+        Firebase.getJSON(firebaseData, path);
+        jsonData = firebaseData.jsonData();
+        //Serial.println(firebaseData.jsonData());  
+    }
+
+
+
+}
+void loop()
+{
+}
+
+
+
+**********************************END************************************************
+
+
+
+
+

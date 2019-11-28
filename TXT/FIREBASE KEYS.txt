@@ -1,0 +1,4 @@
+#define FIREBASE_HOST "dummy-cd6d8.firebaseio.com"
+#define FIREBASE_AUTH "RV3DRq90y7ysfFLoWIB5Rs4pacO6cK0pQZIYmWqU"
+#define WIFI_SSID "pub"
+#define WIFI_PASSWORD "11110000"
